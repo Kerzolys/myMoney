@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { IUser, TCategoryType, TTransaction } from "../types/types";
+import { IUser, TCategory, TCategoryType, TTransaction } from "../types/types";
 
 export interface IUserState {
   user: IUser;
@@ -78,5 +78,37 @@ export const useTransactionState = create<ITransactionState>((set) => ({
   deleteTransaction: (id) =>
     set((state) => ({
       transactions: [...state.transactions].filter((t) => t.id !== id),
+    })),
+}));
+
+export interface ICategoryState {
+  categories: TCategory[];
+  isLoading: boolean;
+  error: string | null;
+  addCategory: (category: TCategory) => void;
+  editCategory: (updatedCategory: TCategory) => void;
+  deleteCategory: (id: string) => void;
+}
+
+export const useCategoryState = create<ICategoryState>((set) => ({
+  categories: [
+    { id: "1", name: "Дом", type: TCategoryType.EXPENSE },
+    { id: "2", name: "Работа", type: TCategoryType.INCOME },
+  ],
+  isLoading: false,
+  error: null,
+  addCategory: (category) =>
+    set((state) => ({ categories: [...state.categories, category] })),
+  editCategory: (updatedCategory) =>
+    set((state) => ({
+      categories: state.categories.map((category) =>
+        category.id === updatedCategory.id
+          ? { ...category, ...updatedCategory }
+          : category
+      ),
+    })),
+  deleteCategory: (id) =>
+    set((state) => ({
+      categories: state.categories.filter((category) => category.id !== id),
     })),
 }));

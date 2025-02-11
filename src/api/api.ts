@@ -1,4 +1,8 @@
-import { TTransaction } from "../services/types/types";
+import {
+  TCategory,
+  TCategoryType,
+  TTransaction,
+} from "../services/types/types";
 
 const API_URL = "./api";
 
@@ -97,6 +101,49 @@ export async function deleteTransaction(id: string) {
   }
   return request<{ message: string; transactions: TTransaction[] }>(
     `/transaction/${id}`,
+    "DELETE"
+  );
+}
+
+export async function getCategories() {
+  return request<{ categories: TCategory[] }>("/categories");
+}
+
+export async function addCategory(name: string, type: TCategoryType) {
+  if (!name || !type) {
+    throw new Error("All fields are required and must be valid.");
+  }
+  return request<{ message: string; categories: TCategory[] }>(
+    "/category",
+    "POST",
+    {
+      name,
+      type,
+    }
+  );
+}
+
+export async function editCategory(
+  id: string,
+  updatedCategory: Partial<TCategory>
+) {
+  console.log("Editing category with ID:", id);
+  if (!id) {
+    throw new Error("Category is not found");
+  }
+  return request<{ message: string; categories: TCategory[] }>(
+    `/category/${id}`,
+    "PUT",
+    updatedCategory
+  );
+}
+
+export async function deleteCategory(id: string) {
+  if (!id) {
+    throw new Error("Category is not found");
+  }
+  return request<{ message: string; categories: TCategory[] }>(
+    `/category/${id}`,
     "DELETE"
   );
 }
