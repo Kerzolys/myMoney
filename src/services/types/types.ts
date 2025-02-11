@@ -6,6 +6,7 @@ export interface IUser {
   createdAt?: string; // Дата регистрации
   avatarUrl?: string; // Фото профиля
   balance?: number; // Текущий баланс (если нужно)
+  transactions: TTransaction[];
 }
 
 export interface IAuthResponse {
@@ -16,7 +17,7 @@ export interface IAuthResponse {
 
 export type TTransaction = {
   id: string;
-  userId: number;
+  userId: string;
   categoryId: string;
   category: TCategory;
   amount: number;

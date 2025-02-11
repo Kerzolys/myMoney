@@ -1,3 +1,5 @@
+import { TTransaction } from "../services/types/types";
+
 const API_URL = "./api";
 
 async function request<T>(
@@ -47,4 +49,54 @@ export async function changeName(name: string) {
   return request<{ message: string; user: object }>("/user/name", "POST", {
     name,
   });
+}
+
+export async function getUserTransactions() {
+  return request<{ transactions: TTransaction[] }>("/transactions");
+}
+
+export async function addTransaction(
+  categoryId: string,
+  amount: number,
+  description: string,
+  isIncome: boolean
+) {
+  // console.log({ categoryId, amount, description, isIncome })
+  if (!categoryId || !amount || !description || typeof isIncome !== "boolean") {
+    throw new Error("All fields are required and must be valid.");
+  }
+  return request<{ message: string; transactions: TTransaction[] }>(
+    "/transaction",
+    "POST",
+    {
+      categoryId,
+      amount,
+      description,
+      isIncome,
+    }
+  );
+}
+
+export async function editTransaction(
+  id: string,
+  updatedTransaction: Partial<TTransaction>
+) {
+  if (!id) {
+    throw new Error("Transaction is not found");
+  }
+  return request<{ message: string; transactions: TTransaction[] }>(
+    `/transaction/${id}`,
+    "PUT",
+    updatedTransaction
+  );
+}
+
+export async function deleteTransaction(id: string) {
+  if (!id) {
+    throw new Error("Transaction is not found");
+  }
+  return request<{ message: string; transactions: TTransaction[] }>(
+    `/transaction/${id}`,
+    "DELETE"
+  );
 }

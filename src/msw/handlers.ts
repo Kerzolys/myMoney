@@ -1,5 +1,11 @@
 import { HttpResponse, http } from "msw";
-import { IUserState, useUserState } from "../services/zustand/store";
+import {
+  ITransactionState,
+  IUserState,
+  useTransactionState,
+  useUserState,
+} from "../services/zustand/store";
+import { TCategoryType, TTransaction } from "../services/types/types";
 
 export const handlers = [
   http.get("/api/user", () => {
@@ -44,10 +50,9 @@ export const handlers = [
         { status: 400 }
       );
     }
-    const state = useUserState.getState()
-    console.log(state);
+    const state = useUserState.getState();
     const user = state.user;
-    
+
     if (user.email === email && user.password === password) {
       return HttpResponse.json({
         user,
@@ -106,6 +111,155 @@ export const handlers = [
     return HttpResponse.json({
       user,
       message: "Username updated successfully",
+    });
+  }),
+
+  http.get("api/user/transactions", async ({ request }) => {
+    const userState = useUserState.getState() as IUserState;
+    const transactionState = useTransactionState.getState();
+    if (!userState.isLoggedIn) {
+      return HttpResponse.json(
+        { error: "You should be logged in" },
+        { status: 401 }
+      );
+    }
+
+    const transactions: TTransaction[] = transactionState.transactions;
+
+    return HttpResponse.json({
+      transactions,
+      message: "Transactions fetched successfully",
+    });
+  }),
+  http.post("/api/transaction", async ({ request }) => {
+    type RequestBody = {
+      categoryId: string;
+      amount: number;
+      description: string;
+      isIncome: boolean;
+    };
+    const { categoryId, amount, description, isIncome } =
+      (await request.json()) as RequestBody;
+    const userState = useUserState.getState() as IUserState;
+    const transactionState =
+      useTransactionState.getState() as ITransactionState;
+
+    if (!userState.isLoggedIn) {
+      return HttpResponse.json(
+        { error: "You should be logged in" },
+        { status: 401 }
+      );
+    }
+
+    // if (!categoryId || !amount || !description || !isIncome) {
+    //   return HttpResponse.json(
+    //     { error: "All fields are required" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    const newTransaction: TTransaction = {
+      id: Math.random().toString(36).substr(2, 9),
+      userId: userState.user.id,
+      categoryId,
+      category: {
+        id: categoryId,
+        name: "Uncategorized",
+        type: TCategoryType.EXPENSE,
+      },
+      amount,
+      description,
+      date: new Date().toISOString(),
+      isIncome,
+      createdAt: new Date().toISOString(),
+    };
+    const transactions: TTransaction[] = transactionState.transactions;
+    transactionState.setTransaction(newTransaction);
+
+    return HttpResponse.json({
+      transactions,
+      message: "Transaction added successfully",
+    });
+  }),
+  http.put("/api/transaction/:id", async ({ params, request }) => {
+    const { id } = params;
+    const updatedTransaction = (await request.json()) as Partial<TTransaction>;
+
+    const userState = useUserState.getState() as IUserState;
+    const transactionState =
+      useTransactionState.getState() as ITransactionState;
+
+    if (!userState.isLoggedIn) {
+      return HttpResponse.json(
+        { error: "You should be logged in" },
+        { status: 401 }
+      );
+    }
+
+    const transactions: TTransaction[] = transactionState.transactions;
+    const transaction = transactions.find((t) => t.id === id);
+    if (!transaction) {
+      return HttpResponse.json(
+        { error: "Transaction not found" },
+        { status: 404 }
+      );
+    }
+    const updatedTransactionData: TTransaction = {
+      ...transaction,
+      ...updatedTransaction,
+    };
+
+    transactionState.editTransaction(updatedTransactionData);
+
+    console.log(updatedTransaction);
+    console.log(transactions);
+
+    return HttpResponse.json({
+      transactions,
+      message: "Transactions updated successfully",
+    });
+  }),
+  http.delete("/api/transaction/:id", async ({ params }) => {
+    const id = params.id as string;
+
+    if (!id) {
+      return HttpResponse.json(
+        { error: "Invalid transaction ID" },
+        { status: 400 }
+      );
+    }
+
+    const userState = useUserState.getState() as IUserState;
+    const transactionState =
+      useTransactionState.getState() as ITransactionState;
+
+    if (!userState.isLoggedIn) {
+      return HttpResponse.json(
+        { error: "You should be logged in" },
+        { status: 401 }
+      );
+    }
+
+    const transactions = transactionState.transactions;
+    const deletedTransaction = transactions.find((t) => t.id === id);
+
+    if (!deletedTransaction) {
+      return HttpResponse.json(
+        { error: "Transaction not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Before deletion:", transactions);
+
+    transactionState.deleteTransaction(id); // Удаляем по ID
+
+    const updatedTransactions = transactionState.transactions; // Получаем обновлённый список
+
+    console.log("After deletion:", updatedTransactions);
+    return HttpResponse.json({
+      transactions: transactions.filter((t) => t.id !== deletedTransaction.id),
+      message: "Transaction deleted successfully",
     });
   }),
 ];
